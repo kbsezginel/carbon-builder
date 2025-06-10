@@ -1,0 +1,6 @@
+streamlit
+numpy
+pands
+ase
+stmol
+py3Dmol
