@@ -10,6 +10,7 @@ import numpy as np
 import streamlit as st
 from io import StringIO
 import subprocess
+from pathlib import Path
 
 from coordinationNumbers import coordination_numbers
 
