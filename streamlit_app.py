@@ -146,6 +146,9 @@ st.title('Perimeter Builder')
 if 'filename' not in st.session_state:
     st.session_state['filename'] = ''
 
+moldir = Path('molecules')
+init_mol = moldir / 'seed0.xyz'
+
 uploaded_file = st.file_uploader('Upload molecule file')
 if uploaded_file is not None:
     if str(uploaded_file.name) != st.session_state['filename']:
@@ -161,7 +164,7 @@ if uploaded_file is not None:
     mol = ase.io.read(fname)
     st.session_state['mol'] = mol
 else:
-    mol = ase.io.read('seed0.xyz')
+    mol = ase.io.read(init_mol)
 
 if 'count' not in st.session_state:
     st.session_state['count'] = 0
