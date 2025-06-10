@@ -4,3 +4,4 @@ pandas
 ase
 stmol
 py3Dmol
+ipython_genutils
