@@ -253,11 +253,11 @@ merge_cutoff_help = """If two atoms are closer to each other than this value the
 
 cols1 = st.columns(4)
 # tri_index = cols[0].number_input('Triangle', value=0, min_value=0, placeholder=str(3))
-add_perimeter_btn = cols1[0].button('Add Perimeter')
-add_spoke_btn = cols1[1].button('Add Spoke')
+add_perimeter_btn = cols1[0].button('Add Perimeter', use_container_width=True)
+add_spoke_btn = cols1[1].button('Add Spoke', use_container_width=True)
 # optimize_btn = cols1[2].button('Optimize')
-complete_perimeter_btn = cols1[2].button('Complete Perimeter')
-undo_btn = cols1[3].button('Undo')
+complete_perimeter_btn = cols1[2].button('Complete Perimeter', use_container_width=True)
+undo_btn = cols1[3].button('Undo', use_container_width=True)
 
 with st.expander('Settings'):
 
