@@ -107,6 +107,11 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     obConversion.ReadFile(mol, pdb_file)
     st.text(mol.NumAtoms())
 
+    a = mol.NewAtom()
+    a.SetAtomicNum(6)   # carbon atom
+    a.SetVector(0.0, 1.0, 2.0) # coordinates
+    st.text(mol.NumAtoms())
+    
     ff = openbabel.OBForceField.FindForceField(ff)
     ff.ConjugateGradients(steps)
     st.text(ff)
