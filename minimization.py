@@ -107,6 +107,8 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     st.text(ff)
 
     atoms = obmol_to_ase_atoms(mol)
+    st.text(atoms)
+    st.text(len(atoms))
 
     # obConversion.SetOutFormat("pdb")
     # s = obConversion.WriteString(mol)
