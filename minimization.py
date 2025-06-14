@@ -95,23 +95,35 @@ def obmol_to_ase_atoms(obmol):
       ase_atoms = Atoms(symbols=symbols, positions=positions)
       return ase_atoms
 
+def atoms2obmol(atoms):
+    mol = openbabel.OBMol()
+    for p in atoms.positions:
+        obatom = mol.NewAtom()
+        obatom.SetAtomicNum(6)
+        obatom.SetVector(p)
+    return mol
+
+
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
-    pdb_file = 'molecules/seed2h.pdb'
+    # pdb_file = 'molecules/seed2h.pdb'
     with open(pdb_file, 'r') as f:
         inf = f.read()
     st.text(inf)
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInFormat("pdb")
-    mol = openbabel.OBMol()
-    # obConversion.ReadString(mol, inf)
-    obConversion.ReadFile(mol, pdb_file)
+    atoms = ase.io.read(pdb_file)
+    mol = atoms2obmol(atoms)
+
+    # obConversion = openbabel.OBConversion()
+    # obConversion.SetInFormat("pdb")
+    # mol = openbabel.OBMol()
+    # # obConversion.ReadString(mol, inf)
+    # obConversion.ReadFile(mol, pdb_file)
     st.text(mol.NumAtoms())
 
-    a = mol.NewAtom()
-    a.SetAtomicNum(6)   # carbon atom
-    a.SetVector(0.0, 1.0, 2.0) # coordinates
-    st.text(mol.NumAtoms())
-    
+    # a = mol.NewAtom()
+    # a.SetAtomicNum(6)   # carbon atom
+    # a.SetVector(0.0, 1.0, 2.0) # coordinates
+    # st.text(mol.NumAtoms())
+
     ff = openbabel.OBForceField.FindForceField(ff)
     ff.ConjugateGradients(steps)
     st.text(ff)
