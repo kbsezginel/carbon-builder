@@ -422,9 +422,9 @@ if undo_btn:
                 min_steps=min_steps
             )
         if c == 'M':
-            st.session_state['mol'].write('min.pdb')
-            add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
-            st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
+            # st.session_state['mol'].write('min.pdb')
+            # add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
+            st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps)
 
 
 ana = Analysis(st.session_state['mol'])
