@@ -106,9 +106,9 @@ def atoms2obmol(atoms):
 
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     # pdb_file = 'molecules/seed2h.pdb'
-    with open(pdb_file, 'r') as f:
-        inf = f.read()
-    st.text(inf)
+    # with open(pdb_file, 'r') as f:
+    #     inf = f.read()
+    # st.text(inf)
     atoms = ase.io.read(pdb_file)
     mol = atoms2obmol(atoms)
 
@@ -126,12 +126,12 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
 
     ff = openbabel.OBForceField.FindForceField(ff)
     ff.ConjugateGradients(steps)
-    st.text(ff)
-    st.text(mol.NumAtoms())
+    # st.text(ff)
+    # st.text(mol.NumAtoms())
 
     atoms = obmol_to_ase_atoms(mol)
-    st.text(atoms)
-    st.text(len(atoms))
+    # st.text(atoms)
+    # st.text(len(atoms))
 
     # obConversion.SetOutFormat("pdb")
     # s = obConversion.WriteString(mol)
