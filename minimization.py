@@ -10,7 +10,7 @@ import os
 from ase import Atoms
 import numpy as np
 
-FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
+FORCE_FIELDS = ['mmff94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
 # OB_EXE = 'obminimize'
 # OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
 
@@ -29,7 +29,7 @@ print(lib_id, env_dir, OB_EXE)
 
 
 def minimize(pdb_file, force_field, steps=20, st=None):
-    if force_field in ['MMFF94', 'Ghemical', 'UFF']:
+    if force_field in ['mmff94', 'Ghemical', 'UFF']:
         atoms = obminimize(pdb_file, steps=steps, ff=force_field, st=st)
     elif force_field == 'EMT':
         atoms = emt_minimize(pdb_file)
@@ -141,7 +141,7 @@ def atoms2obmol(atoms):
     return mol
 
 
-def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
+def obminimize(pdb_file, steps=20, ff='mmff94', st=None):
     # pdb_file = 'molecules/seed2h.pdb'
     # with open(pdb_file, 'r') as f:
     #     inf = f.read()
