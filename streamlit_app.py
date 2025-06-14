@@ -250,10 +250,10 @@ def add_bonds_pdb(pdb_file, atoms, skin=0.5):
             f.write(l)
         f.write('ENDMDL\n')
 
-def minimize(atoms, force_field='MMFF94', steps=20, skin=0.3):
+def minimize(atoms, force_field='MMFF94', steps=20, skin=0.3, st=st):
     atoms.write('min.pdb')
     add_bonds_pdb('min.pdb', atoms, skin=skin)
-    atoms_min = ffmin('min.pdb', force_field, steps=steps)
+    atoms_min = ffmin('min.pdb', force_field, steps=steps, st=st)
     return atoms_min
 
 
@@ -424,7 +424,7 @@ if undo_btn:
         if c == 'M':
             st.session_state['mol'].write('min.pdb')
             add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
-            st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
+            st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps, st=st)
 
 
 ana = Analysis(st.session_state['mol'])

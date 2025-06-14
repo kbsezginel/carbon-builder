@@ -25,9 +25,9 @@ OB_EXE = f'{env_dir}/bin/obabel'
 print(lib_id, env_dir, OB_EXE)
 
 
-def minimize(pdb_file, force_field, steps=20):
+def minimize(pdb_file, force_field, steps=20, st=st):
     if force_field in ['MMFF94', 'Ghemical', 'UFF']:
-        atoms = obminimize(pdb_file, steps=steps, ff=force_field)
+        atoms = obminimize(pdb_file, steps=steps, ff=force_field, st=st)
     elif force_field == 'EMT':
         atoms = emt_minimize(pdb_file)
     elif force_field == 'MMFF (rdKit)':
@@ -35,7 +35,6 @@ def minimize(pdb_file, force_field, steps=20):
     else:
         raise Exception(f'Force field {force_field} not available')
     return atoms
-
 
 
 def emt_minimize(pdb_file):
@@ -64,7 +63,7 @@ def mmff_minimize(pdb_file):
     return rdkit2ase(mol)
 
 
-def obminimize(pdb_file, steps=20, ff='mmff94'):
+def obminimize(pdb_file, steps=20, ff='mmff94', st=st):
     """OpenBabel minimization"""
     exe = OB_EXE
     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
@@ -74,7 +73,7 @@ def obminimize(pdb_file, steps=20, ff='mmff94'):
     with open('tmp_opt.pdb', 'w') as f:
         f.write(result.stdout)
     # st.text(result.stdout)
-    print(result.stdout)
-    print(result.stderr)
+    st.text(result.stdout)
+    st.text(result.stderr)
     atoms = ase.io.read('tmp_opt.pdb')
     return atoms
