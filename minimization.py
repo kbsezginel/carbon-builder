@@ -1,36 +1,23 @@
-import subprocess
+import os
 import ase.io
+import subprocess
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from openbabel import openbabel
+from ase import Atoms
 from ase.optimize import BFGS
 from ase.calculators.emt import EMT
-from rdkit2ase import rdkit2ase, ase2rdkit
 from ase.geometry.analysis import Analysis
-import os
-from ase import Atoms
-import numpy as np
+from rdkit2ase import rdkit2ase, ase2rdkit
+
 
 FORCE_FIELDS = ['mmff94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
-# OB_EXE = 'obminimize'
-# OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
-
-import os
-from openbabel import openbabel
-print('Openbabel Imported ', openbabel.__file__)
-s = openbabel.__file__
-lib_id = s.split('/').index('lib')
-env_dir = '/'.join(s.split('/')[:lib_id])
-print(env_dir)
-print(os.listdir(env_dir))
-print(f'{env_dir}/bin')
-print(os.listdir(f'{env_dir}/bin'))
-OB_EXE = f'{env_dir}/bin/obabel'
-print(lib_id, env_dir, OB_EXE)
 
 
 def minimize(pdb_file, force_field, steps=20, st=None):
     if force_field in ['mmff94', 'Ghemical', 'UFF']:
-        atoms = obminimize(pdb_file, steps=steps, ff=force_field, st=st)
+        atoms = obff_minimize(pdb_file, steps=steps, ff=force_field, st=st)
     elif force_field == 'EMT':
         atoms = emt_minimize(pdb_file)
     elif force_field == 'MMFF (rdKit)':
@@ -42,7 +29,6 @@ def minimize(pdb_file, force_field, steps=20, st=None):
 
 def emt_minimize(pdb_file):
     """ASE EMT minimization"""
-    # atoms.write('opt.xyz')
     atoms_new = ase.io.read(pdb_file)
     atoms_new.calc = EMT()
     # e_init = atoms_new.get_potential_energy()
@@ -66,49 +52,26 @@ def mmff_minimize(pdb_file):
     return rdkit2ase(mol)
 
 
-# def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
-#     """OpenBabel minimization"""
-#     exe = OB_EXE
-#     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
-#     # obabel rd.pdb -o pdb --minimize --steps 15 --ff MMFF94
-#     # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
-#     cmd = [OB_EXE, pdb_file, '-Otmp_opt.pdb', '--minimize'] # , '--steps', str(steps), '--ff', ff]
-#     st.text(cmd)
-#     result = subprocess.run(cmd, capture_output=True, text=True)
-#     with open('tmp_opt.pdb', 'w') as f:
-#         f.write(result.stdout)
-#     # st.text(result.stdout)
-#     st.text(result.stdout)
-#     st.text(result.stderr)
-#     atoms = ase.io.read('tmp_opt.pdb')
-#     return atoms
+def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
+    """OpenBabel minimization"""
+    OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
+    cmd = ['obminimize', '-ff', 'Ghemical', '-n', str(steps), 'test.mol2']
 
-def add_bonds_pdb(pdb_file, atoms, skin=0.5):
-    ana = Analysis(atoms, skin=skin)
-    bonds = ana.get_bonds('C', 'C', unique=True)[0]
+    exe = OB_EXE
+    cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
+    # obabel rd.pdb -o pdb --minimize --steps 15 --ff MMFF94
+    # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
+    cmd = [OB_EXE, pdb_file, '-Otmp_opt.pdb', '--minimize'] # , '--steps', str(steps), '--ff', ff]
+    st.text(cmd)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    with open('tmp_opt.pdb', 'w') as f:
+        f.write(result.stdout)
+    # st.text(result.stdout)
+    st.text(result.stdout)
+    st.text(result.stderr)
+    atoms = ase.io.read('tmp_opt.pdb')
+    return atoms
 
-    with open(pdb_file, 'r') as f:
-        lines = f.readlines()
-
-    new_lines = []
-    for l in lines:
-        if 'ENDMDL' in l:
-            break
-        new_lines.append(l)
-
-    for atom in range(1, len(atoms) + 1):
-        atom_bonds = [atom]
-        for b in bonds:
-            if atom == b[0] + 1:
-                atom_bonds.append(b[1] + 1)
-            elif atom == b[1] + 1:
-                atom_bonds.append(b[0] + 1)
-        new_lines.append('CONECT' + ' %4i' * len(atom_bonds) % tuple(atom_bonds) + '\n')
-
-    with open(pdb_file, 'w') as f:
-        for l in new_lines:
-            f.write(l)
-        f.write('ENDMDL\n')
 
 def obmol_to_ase_atoms(obmol):
       """Converts an Open Babel OBMol object to an ASE Atoms object."""
@@ -123,9 +86,8 @@ def obmol_to_ase_atoms(obmol):
       ase_atoms = Atoms(symbols=symbols, positions=positions)
       return ase_atoms
 
+
 def atoms2obmol(atoms):
-    # atoms.write('tmp.pdb')
-    # add_bonds_pdb('tmp.pdb', atoms, skin=0.3)
     ana = Analysis(atoms)
     bonds = ana.get_bonds('C', 'C', unique=True)[0]
     mol = openbabel.OBMol()
@@ -134,53 +96,35 @@ def atoms2obmol(atoms):
         obatom.SetAtomicNum(6)
         obatom.SetVector(p[0], p[1], p[2])
     for b in bonds:
-        # print(b[0], b[1])
         obbond = mol.NewBond()
         obbond.SetBegin( mol.GetAtom( int(b[0] + 1) ) )
         obbond.SetEnd(mol.GetAtom( int( b[1] + 1) ) )
     return mol
 
 
-def obminimize(pdb_file, steps=20, ff='mmff94', st=None):
-    # pdb_file = 'molecules/seed2h.pdb'
-    # with open(pdb_file, 'r') as f:
-    #     inf = f.read()
-    # st.text(inf)
+def obff_minimize(pdb_file, steps=20, ff='mmff94', algorithm='Conjugate Gradient', st=None):
     atoms = ase.io.read(pdb_file)
     mol = atoms2obmol(atoms)
-    st.text(mol.GetAtom(1).GetVector().GetX())
-
-    # obConversion = openbabel.OBConversion()
-    # obConversion.SetInFormat("pdb")
-    # mol = openbabel.OBMol()
-    # # obConversion.ReadString(mol, inf)
-    # obConversion.ReadFile(mol, pdb_file)
-    # st.text(mol.NumAtoms())
-
-    # a = mol.NewAtom()
-    # a.SetAtomicNum(6)   # carbon atom
-    # a.SetVector(0.0, 1.0, 2.0) # coordinates
-    # st.text(mol.NumAtoms())
-
     obff = openbabel.OBForceField.FindForceField(ff)
     obff.Setup(mol)
-    obff.ConjugateGradients(steps)
+    e_init = obff.Energy()
+    if algorithm == 'Conjugate Gradients':
+        obff.ConjugateGradients(steps)
+    elif algorithm == 'Steepest Descent':
+        obff.SteepestDescent(steps)
     obff.GetCoordinates(mol)
-    # ff.SteepestDescent(steps)
-    st.text(mol.GetAtom(1).GetVector().GetX())
-    st.text(mol.NumAtoms())
-
+    e_final = obff.Energy()
+    st.text(f'{ff} minimization completed | Energy: {e_init:.2f} > {e_final:.2f}')
     atoms = obmol_to_ase_atoms(mol)
-    # st.text(atoms)
-    # st.text(len(atoms))
+    return atoms
 
-    # obConversion.SetOutFormat("pdb")
-    # s = obConversion.WriteString(mol)
-    # with open("ob_output.pdb", "w") as f:
-    #     f.write(s)
-    # st.text(s)
-    # st.text(os.listdir())
-    # # obConversion.WriteFile(mol, "ob_output.pdb")
-    
-    # atoms = ase.io.read("ob_output.pdb")
+
+def obminimize(pdb_file, steps=20, ff='mmff94'):
+    """OpenBabel minimization"""
+    OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
+    cmd = [OB_EXE, '-n', str(steps), '-ff', ff, pdb_file]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    with open('tmp_min.pdb', 'w') as f:
+        f.write(result.stdout)
+    atoms = ase.io.read('tmp_min.pdb')
     return atoms

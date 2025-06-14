@@ -24,7 +24,6 @@ def detect_perimeter_by_coordination(atoms, cutoff=2):
             perimeter.append(i)
     return perimeter
 
-
 def detect_perimeter_by_bonds(atoms, cutoff=2, skin=0.3):
     ana = Analysis(atoms, skin=skin)
     ccbonds = ana.get_bonds('C', 'C')
@@ -67,7 +66,6 @@ def is_perimeter_complete(atoms, skin=0.3):
 
 def add_single_spokes(atoms, angle=60):
     triangles = get_triangles(atoms)
-    # st.text(f'Triangles: {len(triangles)} [num atoms: {len(atoms)}]')
     angle_radians = math.radians(angle)
     for t in triangles:
         p1 = atoms[t].position
@@ -80,7 +78,6 @@ def add_single_spokes(atoms, angle=60):
         a = Atom('C', pnew)
         atoms.append(a)
     return atoms
-
 
 def add_dual_spokes(atoms, angle=60):
     lines, bdict = get_lines(atoms)
@@ -286,20 +283,17 @@ if uploaded_file is not None:
         st.session_state['mol'] = ase.io.read(fname)
 else:
     if st.session_state['filename'] != 'default':
-        # init_mol = ase.io.read(init_xyz)
         st.session_state['mol'] = ase.io.read(init_xyz)
         st.session_state['init_mol'] = ase.io.read(init_xyz)
         st.session_state['filename'] = 'default'
-        # st.session_state['reload_file'] = 'default'
+
 
 bond_skin_help = """Skin distance used to calculate bonding.
 The larger the distance the atoms that are further away will be considered bonded."""
-
 spoke_angle_help = """The angle for the new spoke atoms. Default is 60 degrees based on hexogonal arrangement."""
 merge_help = """When two atoms are closer to each other than merge cutoff, only one of those atoms will be kept.
 If merge to the middle is selected, the average position between these atoms will be kept.
 If merge to the middle is not selected, only the first atom will be kept. The positions will not be averaged."""
-
 merge_cutoff_help = """If two atoms are closer to each other than this value the atoms will be merged.
 """
 
@@ -313,10 +307,7 @@ minimize_btn = cols1[4].button('Minimize', use_container_width=True)
 undo_btn = cols1[5].button('Undo', use_container_width=True)
 reload_btn = cols1[6].button('Reload', use_container_width=True)
 
-# cols1b = st.columns(7)
-
 with st.expander('Settings'):
-
     cols2 = st.columns(5, vertical_alignment='center')
     # show_perimeters = cols2[0].toggle('Show perimeter atoms', value=True)
     spoke_angle = 60
@@ -337,8 +328,6 @@ with st.expander('Settings'):
     mol_viewer_width = cols3[4].number_input('Width', value=1100, min_value=0)
     mol_viewer_height = cols3[5].number_input('Height', value=600, min_value=0)
 
-
-# if add_perimeter_btn or add_spoke_btn or undo_btn:
 if reload_btn:
     st.session_state['mol'] = st.session_state['init_mol']
     st.session_state['count'] = []
@@ -369,11 +358,12 @@ if remove_spokes_btn:
     st.session_state['mol'] = remove_spokes(st.session_state['mol'], skin=bond_skin_dist)
 if minimize_btn:
     st.session_state['count'].append('M')
-    # st.session_state['mol'].write('min.pdb')
-    # add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
-    # st.session_state['mol'] = mmff_minimize('min.pdb')
-    # st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
-    st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps, skin=bond_skin_dist)
+    st.session_state['mol'] = minimize(
+        st.session_state['mol'],
+        force_field,
+        steps=min_steps,
+        skin=bond_skin_dist
+    )
 if complete_perimeter_btn:
     st.session_state['count'].append('C')
     st.session_state['mol'] = complete_perimeter(
@@ -422,10 +412,12 @@ if undo_btn:
                 min_steps=min_steps
             )
         if c == 'M':
-            # st.session_state['mol'].write('min.pdb')
-            # add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
-            st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps)
-
+            st.session_state['mol'] = minimize(
+                st.session_state['mol'],
+                force_field,
+                steps=min_steps,
+                skin=bond_skin_dist
+            )
 
 ana = Analysis(st.session_state['mol'])
 ccbonds = ana.get_bonds('C', 'C', unique=True)
