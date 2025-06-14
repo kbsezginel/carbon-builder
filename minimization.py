@@ -12,7 +12,7 @@ FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
 # OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
 
 import os
-import openbabel
+from openbabel import openbabel
 print('Openbabel Imported ', openbabel.__file__)
 s = openbabel.__file__
 lib_id = s.split('/').index('lib')
@@ -63,19 +63,34 @@ def mmff_minimize(pdb_file):
     return rdkit2ase(mol)
 
 
+# def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
+#     """OpenBabel minimization"""
+#     exe = OB_EXE
+#     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
+#     # obabel rd.pdb -o pdb --minimize --steps 15 --ff MMFF94
+#     # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
+#     cmd = [OB_EXE, pdb_file, '-Otmp_opt.pdb', '--minimize'] # , '--steps', str(steps), '--ff', ff]
+#     st.text(cmd)
+#     result = subprocess.run(cmd, capture_output=True, text=True)
+#     with open('tmp_opt.pdb', 'w') as f:
+#         f.write(result.stdout)
+#     # st.text(result.stdout)
+#     st.text(result.stdout)
+#     st.text(result.stderr)
+#     atoms = ase.io.read('tmp_opt.pdb')
+#     return atoms
+
+
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
-    """OpenBabel minimization"""
-    exe = OB_EXE
-    cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
-    # obabel rd.pdb -o pdb --minimize --steps 15 --ff MMFF94
-    # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
-    cmd = [OB_EXE, pdb_file, '-Otmp_opt.pdb', '--minimize'] # , '--steps', str(steps), '--ff', ff]
-    st.text(cmd)
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    with open('tmp_opt.pdb', 'w') as f:
-        f.write(result.stdout)
-    # st.text(result.stdout)
-    st.text(result.stdout)
-    st.text(result.stderr)
-    atoms = ase.io.read('tmp_opt.pdb')
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInFormat("pdb")
+    mol = openbabel.OBMol()
+    obConversion.ReadFile(mol, pdb_file)
+
+    ff = openbabel.OBForceField.FindForceField(ff)
+    ff.ConjugateGradients(steps)
+
+    obConversion.WriteFile(mol, "ob_output.pdb")
+    
+    atoms = ase.io.read("ob_output.pdb")
     return atoms
