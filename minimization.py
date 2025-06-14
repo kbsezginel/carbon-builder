@@ -117,7 +117,7 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     # mol = openbabel.OBMol()
     # # obConversion.ReadString(mol, inf)
     # obConversion.ReadFile(mol, pdb_file)
-    st.text(mol.NumAtoms())
+    # st.text(mol.NumAtoms())
 
     # a = mol.NewAtom()
     # a.SetAtomicNum(6)   # carbon atom
@@ -143,13 +143,3 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     
     # atoms = ase.io.read("ob_output.pdb")
     return atoms
-
-# obConversion = openbabel.OBConversion()
-# obConversion.SetInFormat("pdb")
-# mol = openbabel.OBMol()
-# obConversion.ReadFile(mol, pdb_file)
-
-# ff = openbabel.OBForceField.FindForceField(ff)
-# ff.ConjugateGradients(steps)
-
-# atoms = obmol_to_ase_atoms(mol)
