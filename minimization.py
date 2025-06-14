@@ -95,6 +95,9 @@ def obmol_to_ase_atoms(obmol):
       return ase_atoms
 
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
+    with open(pdb_file, 'r') as f:
+        inf = f.read()
+    st.text(inf)
     obConversion = openbabel.OBConversion()
     obConversion.SetInFormat("pdb")
     mol = openbabel.OBMol()
