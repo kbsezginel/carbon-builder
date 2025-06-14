@@ -100,7 +100,7 @@ def atoms2obmol(atoms):
     for p in atoms.positions:
         obatom = mol.NewAtom()
         obatom.SetAtomicNum(6)
-        obatom.SetVector(p)
+        obatom.SetVector(p[0], p[1], p[2])
     return mol
 
 
