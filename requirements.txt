@@ -7,4 +7,5 @@ py3Dmol
 ipython_genutils
 rdkit
 rdkit2ase
+openbabel-wheel
 openbabel
