@@ -5,6 +5,7 @@ from rdkit.Chem import AllChem
 from ase.optimize import BFGS
 from ase.calculators.emt import EMT
 from rdkit2ase import rdkit2ase, ase2rdkit
+from ase.geometry.analysis import Analysis
 import os
 from ase import Atoms
 import numpy as np
@@ -82,6 +83,33 @@ def mmff_minimize(pdb_file):
 #     atoms = ase.io.read('tmp_opt.pdb')
 #     return atoms
 
+def add_bonds_pdb(pdb_file, atoms, skin=0.5):
+    ana = Analysis(atoms, skin=skin)
+    bonds = ana.get_bonds('C', 'C', unique=True)[0]
+
+    with open(pdb_file, 'r') as f:
+        lines = f.readlines()
+
+    new_lines = []
+    for l in lines:
+        if 'ENDMDL' in l:
+            break
+        new_lines.append(l)
+
+    for atom in range(1, len(atoms) + 1):
+        atom_bonds = [atom]
+        for b in bonds:
+            if atom == b[0] + 1:
+                atom_bonds.append(b[1] + 1)
+            elif atom == b[1] + 1:
+                atom_bonds.append(b[0] + 1)
+        new_lines.append('CONECT' + ' %4i' * len(atom_bonds) % tuple(atom_bonds) + '\n')
+
+    with open(pdb_file, 'w') as f:
+        for l in new_lines:
+            f.write(l)
+        f.write('ENDMDL\n')
+
 def obmol_to_ase_atoms(obmol):
       """Converts an Open Babel OBMol object to an ASE Atoms object."""
       # Get atom symbols and positions from OBMol
@@ -96,11 +124,20 @@ def obmol_to_ase_atoms(obmol):
       return ase_atoms
 
 def atoms2obmol(atoms):
+    # atoms.write('tmp.pdb')
+    # add_bonds_pdb('tmp.pdb', atoms, skin=0.3)
+    ana = Analysis(atoms, skin=0.3)
+    bonds = ana.get_bonds('C', 'C', unique=True)[0]
     mol = openbabel.OBMol()
     for p in atoms.positions:
         obatom = mol.NewAtom()
         obatom.SetAtomicNum(6)
         obatom.SetVector(p[0], p[1], p[2])
+    for b in bonds:
+        # print(b[0], b[1])
+        obbond = mol.NewBond()
+        obbond.SetBegin( mol.GetAtom( int(b[0] + 1) ) )
+        obbond.SetEnd(mol.GetAtom( int( b[1] + 1) ) )
     return mol
 
 
@@ -125,10 +162,10 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     # a.SetVector(0.0, 1.0, 2.0) # coordinates
     # st.text(mol.NumAtoms())
 
-    ff = openbabel.OBForceField.FindForceField(ff)
-    ff.Setup(mol)
-    ff.ConjugateGradients(steps)
-    ff.GetCoordinates(mol)
+    obff = openbabel.OBForceField.FindForceField(ff)
+    obff.Setup(mol)
+    obff.ConjugateGradients(steps)
+    obff.GetCoordinates(mol)
     # ff.SteepestDescent(steps)
     st.text(mol.GetAtom(1).GetVector().GetX())
     st.text(mol.NumAtoms())
