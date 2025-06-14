@@ -25,7 +25,7 @@ OB_EXE = f'{env_dir}/bin/obabel'
 print(lib_id, env_dir, OB_EXE)
 
 
-def minimize(pdb_file, force_field, steps=20, st=st):
+def minimize(pdb_file, force_field, steps=20, st=None):
     if force_field in ['MMFF94', 'Ghemical', 'UFF']:
         atoms = obminimize(pdb_file, steps=steps, ff=force_field, st=st)
     elif force_field == 'EMT':
@@ -63,7 +63,7 @@ def mmff_minimize(pdb_file):
     return rdkit2ase(mol)
 
 
-def obminimize(pdb_file, steps=20, ff='mmff94', st=st):
+def obminimize(pdb_file, steps=20, ff='mmff94', st=None):
     """OpenBabel minimization"""
     exe = OB_EXE
     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
