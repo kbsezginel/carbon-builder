@@ -21,7 +21,7 @@ print(env_dir)
 print(os.listdir(env_dir))
 print(f'{env_dir}/bin')
 print(os.listdir(f'{env_dir}/bin'))
-OB_EXE = f'{env_dir}/bin/obminimize'
+OB_EXE = f'{env_dir}/bin/obabel'
 print(lib_id, env_dir, OB_EXE)
 
 
@@ -68,6 +68,8 @@ def obminimize(pdb_file, steps=20, ff='mmff94'):
     """OpenBabel minimization"""
     exe = OB_EXE
     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
+    # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
+    cmd = [OB_EXE, pdb_file, '--minimize', '--steps', str(steps)]
     result = subprocess.run(cmd, capture_output=True, text=True)
     with open('tmp_opt.pdb', 'w') as f:
         f.write(result.stdout)
