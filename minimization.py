@@ -6,6 +6,8 @@ from ase.optimize import BFGS
 from ase.calculators.emt import EMT
 from rdkit2ase import rdkit2ase, ase2rdkit
 import os
+from ase import Atoms
+import numpy as np
 
 FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
 # OB_EXE = 'obminimize'
@@ -80,6 +82,17 @@ def mmff_minimize(pdb_file):
 #     atoms = ase.io.read('tmp_opt.pdb')
 #     return atoms
 
+def obmol_to_ase_atoms(obmol):
+      """Converts an Open Babel OBMol object to an ASE Atoms object."""
+
+      # Get atom symbols and positions from OBMol
+      symbols = [obmol.GetAtom(i+1).GetSymbol() for i in range(obmol.NumAtoms())]
+      positions = np.array([obmol.GetAtom(i+1).GetVector() for i in range(obmol.NumAtoms())])
+
+      # Create ASE Atoms object
+      ase_atoms = Atoms(symbols=symbols, positions=positions)
+
+      return ase_atoms
 
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     obConversion = openbabel.OBConversion()
@@ -93,13 +106,15 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     st.text(mol)
     st.text(ff)
 
-    obConversion.SetOutFormat("pdb")
-    s = obConversion.WriteString(mol)
-    with open("ob_output.pdb", "w") as f:
-        f.write(s)
-    st.text(s)
-    st.text(os.listdir())
-    # obConversion.WriteFile(mol, "ob_output.pdb")
+    atoms = obmol_to_ase_atoms(mol)
+
+    # obConversion.SetOutFormat("pdb")
+    # s = obConversion.WriteString(mol)
+    # with open("ob_output.pdb", "w") as f:
+    #     f.write(s)
+    # st.text(s)
+    # st.text(os.listdir())
+    # # obConversion.WriteFile(mol, "ob_output.pdb")
     
-    atoms = ase.io.read("ob_output.pdb")
+    # atoms = ase.io.read("ob_output.pdb")
     return atoms
