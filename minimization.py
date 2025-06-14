@@ -11,11 +11,16 @@ FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
 # OB_EXE = 'obminimize'
 # OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
 
+import os
 import openbabel
 print('Openbabel Imported ', openbabel.__file__)
 s = openbabel.__file__
 lib_id = s.split('/').index('lib')
 env_dir = '/'.join(s.split('/')[:lib_id])
+print(env_dir)
+print(os.listdir(env_dir))
+print(f'{env_dir}/bin')
+print(os.listdir(f'{env_dir}/bin'))
 OB_EXE = f'{env_dir}/bin/obminimize'
 print(lib_id, env_dir, OB_EXE)
 
