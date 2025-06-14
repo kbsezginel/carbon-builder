@@ -5,7 +5,7 @@ from rdkit.Chem import AllChem
 from ase.optimize import BFGS
 from ase.calculators.emt import EMT
 from rdkit2ase import rdkit2ase, ase2rdkit
-
+import os
 
 FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
 # OB_EXE = 'obminimize'
@@ -97,6 +97,8 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     s = obConversion.WriteString(mol)
     with open("ob_output.pdb", "w") as f:
         f.write(s)
+    st.text(s)
+    st.text(os.listdir())
     # obConversion.WriteFile(mol, "ob_output.pdb")
     
     atoms = ase.io.read("ob_output.pdb")
