@@ -63,12 +63,13 @@ def mmff_minimize(pdb_file):
     return rdkit2ase(mol)
 
 
-def obminimize(pdb_file, steps=20, ff='mmff94', st=None):
+def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     """OpenBabel minimization"""
     exe = OB_EXE
     cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
+    # obabel rd.pdb -o pdb --minimize --steps 15 --ff MMFF94
     # obabel infile.xxx -O outfile.yyy --minimize --steps 1500 --sd
-    cmd = [OB_EXE, pdb_file, '--minimize', '--steps', str(steps)]
+    cmd = [OB_EXE, pdb_file, '-o-', 'pdb', '--minimize', '--steps', str(steps), '--ff', ff]
     result = subprocess.run(cmd, capture_output=True, text=True)
     with open('tmp_opt.pdb', 'w') as f:
         f.write(result.stdout)
