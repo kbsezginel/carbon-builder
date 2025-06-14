@@ -74,5 +74,7 @@ def obminimize(pdb_file, steps=20, ff='mmff94'):
     with open('tmp_opt.pdb', 'w') as f:
         f.write(result.stdout)
     # st.text(result.stdout)
+    print(result.stdout)
+    print(result.stderr)
     atoms = ase.io.read('tmp_opt.pdb')
     return atoms
