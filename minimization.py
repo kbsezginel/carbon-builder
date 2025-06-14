@@ -126,7 +126,7 @@ def obmol_to_ase_atoms(obmol):
 def atoms2obmol(atoms):
     # atoms.write('tmp.pdb')
     # add_bonds_pdb('tmp.pdb', atoms, skin=0.3)
-    ana = Analysis(atoms, skin=0.3)
+    ana = Analysis(atoms)
     bonds = ana.get_bonds('C', 'C', unique=True)[0]
     mol = openbabel.OBMol()
     for p in atoms.positions:
