@@ -108,7 +108,7 @@ def obff_minimize(pdb_file, steps=20, ff='mmff94', algorithm='Conjugate Gradient
     obff = openbabel.OBForceField.FindForceField(ff)
     obff.Setup(mol)
     e_init = obff.Energy()
-    if algorithm == 'Conjugate Gradients':
+    if algorithm == 'Conjugate Gradient':
         obff.ConjugateGradients(steps)
     elif algorithm == 'Steepest Descent':
         obff.SteepestDescent(steps)

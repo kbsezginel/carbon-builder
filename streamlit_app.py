@@ -134,7 +134,7 @@ def add_perimeter(
     dup_average=True,
     angle=60,
     run_minimization=False,
-    force_field='MMFF94',
+    force_field='mmff94',
     min_steps=20
 ):
     atoms_new = add_single_spokes(atoms, angle=angle)
@@ -155,7 +155,7 @@ def complete_perimeter(
     angle=60,
     max_attempts=3, 
     run_minimization=False,
-    force_field='MMFF94',
+    force_field='mmff94',
     min_steps=20
 ):
     n = 0
@@ -178,7 +178,7 @@ def add_spoke(
     skin=0.3,
     single_only=False,
     run_minimization=False,
-    force_field='MMFF94',
+    force_field='mmff94',
     min_steps=20
 ):
     angle_radians = math.radians(angle)
@@ -193,7 +193,6 @@ def add_spoke(
             p2 = atoms[connected_atom].position
             p3 = atoms[tri[0]].position
             p4 = atoms[tri[1]].position
-
             v1 = p1 - p2
             p3n = p3 + v1 / math.cos(angle_radians)
             p4n = p4 + v1 / math.cos(angle_radians)
@@ -247,7 +246,7 @@ def add_bonds_pdb(pdb_file, atoms, skin=0.5):
             f.write(l)
         f.write('ENDMDL\n')
 
-def minimize(atoms, force_field='MMFF94', steps=20, skin=0.3):
+def minimize(atoms, force_field='mmff94', steps=20, skin=0.3):
     atoms.write('min.pdb')
     add_bonds_pdb('min.pdb', atoms, skin=skin)
     atoms_min = ffmin('min.pdb', force_field, steps=steps, st=st)
@@ -319,6 +318,7 @@ with st.expander('Settings'):
     minimize_every_step = cols2[4].toggle('Minimize every step', value=False)
     dup_average = True
     # dup_average = cols2[4].toggle('Merge nearby atoms to the middle', value=True, help=merge_help)
+
 
     cols3 = st.columns(6)
     perimeter_color = cols3[0].color_picker("Perimeter Color", "#E20000")
