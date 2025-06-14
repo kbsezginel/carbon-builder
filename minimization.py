@@ -94,7 +94,10 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     st.text(ff)
 
     obConversion.SetOutFormat("pdb")
-    obConversion.WriteFile(mol, "ob_output.pdb")
+    s = obConversion.WriteString(mol)
+    with open("ob_output.pdb", "w") as f:
+        f.write(s)
+    # obConversion.WriteFile(mol, "ob_output.pdb")
     
     atoms = ase.io.read("ob_output.pdb")
     return atoms
