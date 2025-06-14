@@ -84,14 +84,15 @@ def mmff_minimize(pdb_file):
 
 def obmol_to_ase_atoms(obmol):
       """Converts an Open Babel OBMol object to an ASE Atoms object."""
-
       # Get atom symbols and positions from OBMol
-      symbols = [obmol.GetAtom(i+1).GetSymbol() for i in range(obmol.NumAtoms())]
-      positions = np.array([obmol.GetAtom(i+1).GetVector() for i in range(obmol.NumAtoms())])
-
+      symbols = ['C' for i in range(obmol.NumAtoms())]
+      positions = []
+      for i in range(obmol.NumAtoms()):
+          vec = obmol.GetAtom(i+1).GetVector()
+          positions.append([vec.GetX(), vec.GetY(), vec.GetZ()])
+      # positions = np.array([obmol.GetAtom(i+1).GetVector() for i in range(obmol.NumAtoms())])
       # Create ASE Atoms object
       ase_atoms = Atoms(symbols=symbols, positions=positions)
-
       return ase_atoms
 
 def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
@@ -123,3 +124,13 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     
     # atoms = ase.io.read("ob_output.pdb")
     return atoms
+
+obConversion = openbabel.OBConversion()
+obConversion.SetInFormat("pdb")
+mol = openbabel.OBMol()
+obConversion.ReadFile(mol, pdb_file)
+
+ff = openbabel.OBForceField.FindForceField(ff)
+ff.ConjugateGradients(steps)
+
+atoms = obmol_to_ase_atoms(mol)
