@@ -166,7 +166,7 @@ def complete_perimeter(
     while not perimeter_completed:
         atoms = add_spoke(atoms, dup_cutoff=dup_cutoff, dup_average=dup_average, angle=angle, single_only=True)
         if run_minimization:
-            mol_new = minimize(atoms, force_field)
+            atoms = minimize(atoms, force_field, steps=min_steps)
         perimeter_completed = is_perimeter_complete(atoms)
         n += 1
         if n > max_attempts:
@@ -215,7 +215,7 @@ def add_spoke(
             atoms.append(a)
     atoms = remove_duplicates(atoms, cutoff=dup_cutoff, average=dup_average)
     if run_minimization:
-        mol_new = minimize(atoms, force_field, steps=min_steps)
+        atoms = minimize(atoms, force_field, steps=min_steps)
     return atoms
 
 def remove_spokes(atoms, skin=0.3):
@@ -366,14 +366,14 @@ if add_spoke_btn:
     )
 if remove_spokes_btn:
     st.session_state['count'].append('RS')
-    st.session_state['mol'] = remove_spokes(st.session_state['mol'])
+    st.session_state['mol'] = remove_spokes(st.session_state['mol'], skin=bond_skin_dist)
 if minimize_btn:
     st.session_state['count'].append('M')
     # st.session_state['mol'].write('min.pdb')
     # add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
     # st.session_state['mol'] = mmff_minimize('min.pdb')
     # st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
-    st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps)
+    st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps, skin=bond_skin_dist)
 if complete_perimeter_btn:
     st.session_state['count'].append('C')
     st.session_state['mol'] = complete_perimeter(
@@ -410,7 +410,7 @@ if undo_btn:
                 min_steps=min_steps
             )
         if c == 'RS':
-            st.session_state['mol'] = remove_spokes(st.session_state['mol'])
+            st.session_state['mol'] = remove_spokes(st.session_state['mol'], skin=bond_skin_dist)
         if c == 'C':
             st.session_state['mol'] = complete_perimeter(
                 st.session_state['mol'],
