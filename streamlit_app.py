@@ -11,7 +11,8 @@ import subprocess
 from pathlib import Path
 from copy import deepcopy
 
-from minimization import mmff_minimize, emt_minimize
+from minimization import minimize as ffmin
+from minimization import FORCE_FIELDS
 from coordinationNumbers import coordination_numbers
 
 
@@ -130,22 +131,59 @@ def remove_duplicates(atoms, cutoff=0.1, average=False):
     # st.text(f'Total: {len(atoms)} Delete: {len(delete)} Keep: {len(keep)}')
     return atoms
 
-def add_perimeter(mol, dup_cutoff=1.0, dup_average=True, angle=60):
-    mol_new = add_single_spokes(mol, angle=angle)
-    mol_new = add_dual_spokes(mol_new, angle=angle)
-    mol_new = remove_duplicates(mol_new, cutoff=dup_cutoff, average=dup_average)
-    return mol_new
+def add_perimeter(
+    atoms,
+    dup_cutoff=1.0,
+    dup_average=True,
+    angle=60,
+    run_minimization=False,
+    force_field='MMFF94',
+    min_steps=20
+):
+    atoms_new = add_single_spokes(atoms, angle=angle)
+    if run_minimization:
+        atoms_new = minimize(atoms_new, force_field)
+    atoms_new = add_dual_spokes(atoms_new, angle=angle)
+    if run_minimization:
+        atoms_new = minimize(atoms_new, force_field)
+    atoms_new = remove_duplicates(atoms_new, cutoff=dup_cutoff, average=dup_average)
+    if run_minimization:
+        atoms_new = minimize(atoms_new, force_field)
+    return atoms_new
 
-def complete_perimeter(atoms, dup_cutoff=1.0, dup_average=True, angle=60, max_attempts=3):
+def complete_perimeter(
+    atoms,
+    dup_cutoff=1.0,
+    dup_average=True,
+    angle=60,
+    max_attempts=3, 
+    run_minimization=False,
+    force_field='MMFF94',
+    min_steps=20
+):
     n = 0
-    while not is_perimeter_complete(atoms):
+    perimeter_completed = is_perimeter_complete(atoms)
+    while not perimeter_completed:
         atoms = add_spoke(atoms, dup_cutoff=dup_cutoff, dup_average=dup_average, angle=angle, single_only=True)
+        if run_minimization:
+            mol_new = minimize(atoms, force_field)
+        perimeter_completed = is_perimeter_complete(atoms)
         n += 1
         if n > max_attempts:
             break
     return atoms
 
-def add_spoke(atoms, dup_cutoff=1.0, dup_average=True, angle=60, skin=0.3, single_only=False):
+def add_spoke(
+    atoms,
+    dup_cutoff=1.0,
+    dup_average=True,
+    angle=60,
+    skin=0.3,
+    single_only=False,
+    run_minimization=False,
+    force_field='MMFF94',
+    min_steps=20
+):
     angle_radians = math.radians(angle)
     patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=2, skin=skin)
     for a in patoms:
@@ -176,7 +214,14 @@ def add_spoke(atoms, dup_cutoff=1.0, dup_average=True, angle=60, skin=0.3, singl
             a = Atom('C', pnew)
             atoms.append(a)
     atoms = remove_duplicates(atoms, cutoff=dup_cutoff, average=dup_average)
+    if run_minimization:
+        mol_new = minimize(atoms, force_field, steps=min_steps)
     return atoms
+
+def remove_spokes(atoms, skin=0.3):
+    patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=1, skin=skin)
+    keep_atoms = [i for i in range(len(atoms)) if i not in patoms]
+    return atoms[keep_atoms]
 
 def add_bonds_pdb(pdb_file, atoms, skin=0.5):
     ana = Analysis(atoms, skin=skin)
@@ -205,8 +250,14 @@ def add_bonds_pdb(pdb_file, atoms, skin=0.5):
             f.write(l)
         f.write('ENDMDL\n')
 
+def minimize(atoms, force_field='MMFF94', steps=20, skin=0.3):
+    atoms.write('min.pdb')
+    add_bonds_pdb('min.pdb', atoms, skin=skin)
+    atoms_min = ffmin('min.pdb', force_field, steps=steps)
+    return atoms_min
 
-st.set_page_config(page_title='Perimeter Builder')
+
+st.set_page_config(page_title='Perimeter Builder', layout='wide')
 st.title('Perimeter Builder')
 
 if 'filename' not in st.session_state:
@@ -239,6 +290,7 @@ else:
         st.session_state['mol'] = ase.io.read(init_xyz)
         st.session_state['init_mol'] = ase.io.read(init_xyz)
         st.session_state['filename'] = 'default'
+        # st.session_state['reload_file'] = 'default'
 
 bond_skin_help = """Skin distance used to calculate bonding.
 The larger the distance the atoms that are further away will be considered bonded."""
@@ -251,74 +303,133 @@ If merge to the middle is not selected, only the first atom will be kept. The po
 merge_cutoff_help = """If two atoms are closer to each other than this value the atoms will be merged.
 """
 
-cols1 = st.columns(4)
+cols1 = st.columns(7, vertical_alignment='center')
 # tri_index = cols[0].number_input('Triangle', value=0, min_value=0, placeholder=str(3))
 add_perimeter_btn = cols1[0].button('Add Perimeter', use_container_width=True)
-add_spoke_btn = cols1[1].button('Add Spoke', use_container_width=True)
-# optimize_btn = cols1[2].button('Optimize')
-complete_perimeter_btn = cols1[2].button('Complete Perimeter', use_container_width=True)
-undo_btn = cols1[3].button('Undo', use_container_width=True)
+add_spoke_btn = cols1[1].button('Add Spokes', use_container_width=True)
+remove_spokes_btn = cols1[2].button('Remove spokes', use_container_width=True)
+complete_perimeter_btn = cols1[3].button('Complete Perimeter', use_container_width=True)
+minimize_btn = cols1[4].button('Minimize', use_container_width=True)
+undo_btn = cols1[5].button('Undo', use_container_width=True)
+reload_btn = cols1[6].button('Reload', use_container_width=True)
+
+# cols1b = st.columns(7)
 
 with st.expander('Settings'):
 
-    cols2 = st.columns(3, vertical_alignment='bottom')
+    cols2 = st.columns(5, vertical_alignment='center')
     # show_perimeters = cols2[0].toggle('Show perimeter atoms', value=True)
     spoke_angle = 60
     # spoke_angle = cols2[0].number_input('Spoke angle', value=60, help=spoke_angle_help)
-    bond_skin_dist = cols2[0].number_input('Bond skin distance', value=0.3, min_value=0.0, help=bond_skin_help)
-    dup_cutoff = cols2[1].number_input('Merge cutoff (Å)', value=1.0, min_value=0.0,    help=merge_cutoff_help)
-    dup_average = cols2[2].toggle('Merge nearby atoms to the middle', value=True, help=merge_help)
+    force_field = cols2[0].selectbox('Force Field', FORCE_FIELDS, index=0)
+    min_steps = cols2[1].number_input('Minimization Steps', value=20, min_value=0)
+    bond_skin_dist = cols2[2].number_input('Bond skin distance', value=0.3, min_value=0.0, help=bond_skin_help)
+    dup_cutoff = cols2[3].number_input('Merge cutoff (Å)', value=1.0, min_value=0.0, help=merge_help)
+    minimize_every_step = cols2[4].toggle('Minimize every step', value=False)
+    dup_average = True
+    # dup_average = cols2[4].toggle('Merge nearby atoms to the middle', value=True, help=merge_help)
 
-    cols3 = st.columns(4)
+    cols3 = st.columns(6)
     perimeter_color = cols3[0].color_picker("Perimeter Color", "#E20000")
     atom_color = cols3[1].color_picker("Atom Color", "#373737")
     bond_color = cols3[2].color_picker("Bond Color", "#373737")
     bg_color = cols3[3].color_picker("Background Color", "#ffffff")
+    mol_viewer_width = cols3[4].number_input('Width', value=1100, min_value=0)
+    mol_viewer_height = cols3[5].number_input('Height', value=600, min_value=0)
 
 
 # if add_perimeter_btn or add_spoke_btn or undo_btn:
+if reload_btn:
+    st.session_state['mol'] = st.session_state['init_mol']
+    st.session_state['count'] = []
 if add_perimeter_btn:
     st.session_state['count'].append('P')
-    st.session_state['mol'] = add_perimeter(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
+    st.session_state['mol'] = add_perimeter(
+        st.session_state['mol'],
+        dup_cutoff=dup_cutoff,
+        dup_average=dup_average,
+        angle=spoke_angle,
+        run_minimization=minimize_every_step,
+        force_field=force_field,
+        min_steps=min_steps
+    )
 if add_spoke_btn:
     st.session_state['count'].append('S')
-    st.session_state['mol'] = add_spoke(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
-# if optimize_btn:
-#     st.session_state['count'].append('O')
+    st.session_state['mol'] = add_spoke(
+        st.session_state['mol'],
+        dup_cutoff=dup_cutoff,
+        dup_average=dup_average,
+        angle=spoke_angle,
+        run_minimization=minimize_every_step,
+        force_field=force_field,
+        min_steps=min_steps
+    )
+if remove_spokes_btn:
+    st.session_state['count'].append('RS')
+    st.session_state['mol'] = remove_spokes(st.session_state['mol'])
+if minimize_btn:
+    st.session_state['count'].append('M')
+    # st.session_state['mol'].write('min.pdb')
+    # add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
+    # st.session_state['mol'] = mmff_minimize('min.pdb')
+    # st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
+    st.session_state['mol'] = minimize(st.session_state['mol'], force_field, steps=min_steps)
 if complete_perimeter_btn:
     st.session_state['count'].append('C')
-    st.session_state['mol'] = complete_perimeter(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
+    st.session_state['mol'] = complete_perimeter(
+        st.session_state['mol'],
+        dup_cutoff=dup_cutoff,
+        dup_average=dup_average,
+        angle=spoke_angle,
+        run_minimization=minimize_every_step,
+        force_field=force_field,
+        min_steps=min_steps
+    )
 if undo_btn:
     st.session_state['count'].pop()
     st.session_state['mol'] = deepcopy(st.session_state['init_mol'])
     for c in st.session_state['count']:
         if c == 'P':
-            st.session_state['mol'] = add_perimeter(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
+            st.session_state['mol'] = add_perimeter(
+                st.session_state['mol'],
+                dup_cutoff=dup_cutoff,
+                dup_average=dup_average,
+                angle=spoke_angle,
+                run_minimization=minimize_every_step,
+                force_field=force_field,
+                min_steps=min_steps
+            )
         if c == 'S':
-            st.session_state['mol'] = add_spoke(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
+            st.session_state['mol'] = add_spoke(
+                st.session_state['mol'],
+                dup_cutoff=dup_cutoff,
+                dup_average=dup_average,
+                angle=spoke_angle,
+                run_minimization=minimize_every_step,
+                force_field=force_field,
+                min_steps=min_steps
+            )
+        if c == 'RS':
+            st.session_state['mol'] = remove_spokes(st.session_state['mol'])
         if c == 'C':
-            st.session_state['mol'] = complete_perimeter(st.session_state['mol'], dup_cutoff=dup_cutoff, dup_average=dup_average, angle=spoke_angle)
-        if c == 'O':
-            # mol = mmff_minimize(mol)
-            st.session_state['mol'] = emt_minimize(st.session_state['mol'])
+            st.session_state['mol'] = complete_perimeter(
+                st.session_state['mol'],
+                dup_cutoff=dup_cutoff,
+                dup_average=dup_average,
+                angle=spoke_angle,
+                run_minimization=minimize_every_step,
+                force_field=force_field,
+                min_steps=min_steps
+            )
+        if c == 'M':
+            st.session_state['mol'].write('min.pdb')
+            add_bonds_pdb('min.pdb', st.session_state['mol'], skin=bond_skin_dist)
+            st.session_state['mol'] = minimize('min.pdb', force_field, steps=min_steps)
 
-
-# def printbonds(A,B):
-# ABBonds = ana.get_bonds(A, B, unique=True)
-# print(“There are {} {}-{} bonds.”.format(len(ABBonds[0]),A,B))
-# ABBondValues = ana.get_values(ABBonds)
-# print(*ABBondValues[0])
-# print(“The average {}-{} bond length is {}.”.format(A,B,np.average(ABBondValues)))
 
 ana = Analysis(st.session_state['mol'])
 ccbonds = ana.get_bonds('C', 'C', unique=True)
 nb = len(ccbonds[0])
-
-# TO DO:
-# Recalculate bonds
-# Use coordination numbers and make the factor a knob
-# This way longer bonds can be added
-
 pc = st.session_state['count'].count('P')
 sc = st.session_state['count'].count('S')
 nc = st.session_state['count'].count('C')
@@ -331,7 +442,7 @@ st.session_state['mol'].write('tmp.pdb')
 add_bonds_pdb('tmp.pdb', st.session_state['mol'], skin=bond_skin_dist)
 pdbfile = open('tmp.pdb').read()
 
-viewer = py3Dmol.view()
+viewer = py3Dmol.view(height=mol_viewer_height, width=mol_viewer_width)
 viewer.addModel(pdbfile,'pdb',{'doAssembly':True,'duplicateAssemblyAtoms':True})
 viewer.setStyle({'sphere':{'scale':.3, 'color': atom_color},'stick':{'color': bond_color}})
 viewer.setBackgroundColor(bg_color)
@@ -345,7 +456,7 @@ for a in patoms:
 # viewer.addStyle({'model': -1, 'serial': 1}, {'sphere': {'color': 'red', 'radius': 2.5}})
 viewer.zoomTo()
 
-showmol(viewer, height=500, width=800)
+showmol(viewer, height=mol_viewer_height, width=mol_viewer_width)
 
 
 # @st.cache_data

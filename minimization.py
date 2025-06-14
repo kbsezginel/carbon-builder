@@ -1,3 +1,4 @@
+import subprocess
 import ase.io
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -6,10 +7,27 @@ from ase.calculators.emt import EMT
 from rdkit2ase import rdkit2ase, ase2rdkit
 
 
-def emt_minimize(atoms):
+FORCE_FIELDS = ['MMFF94', 'Ghemical', 'UFF', 'EMT', 'MMFF (rdKit)']
+OB_EXE = 'obminimize'
+# OB_EXE = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
+
+def minimize(pdb_file, force_field, steps=20):
+    if force_field in ['MMFF94', 'Ghemical', 'UFF']:
+        atoms = obminimize(pdb_file, steps=steps, ff=force_field)
+    elif force_field == 'EMT':
+        atoms = emt_minimize(pdb_file)
+    elif force_field == 'MMFF (rdKit)':
+        atoms = mmff_minimize(pdb_file)
+    else:
+        raise Exception(f'Force field {force_field} not available')
+    return atoms
+
+
+
+def emt_minimize(pdb_file):
     """ASE EMT minimization"""
-    atoms.write('opt.xyz')
-    atoms_new = ase.io.read('opt.xyz')
+    # atoms.write('opt.xyz')
+    atoms_new = ase.io.read(pdb_file)
     atoms_new.calc = EMT()
     # e_init = atoms_new.get_potential_energy()
     dyn = BFGS(atoms_new)
@@ -19,10 +37,10 @@ def emt_minimize(atoms):
     return atoms_new
 
 
-def mmff_minimize(atoms):
+def mmff_minimize(pdb_file):
     """rdKit mmff minimization"""
-    atoms.write('rd.pdb')
-    mol = Chem.MolFromPDBFile('rd.pdb', removeHs=False)  # Set 
+    # atoms.write('rd.pdb')
+    mol = Chem.MolFromPDBFile(pdb_file, removeHs=False)  # Set 
     # Chem.AddHs(mol)
 
     # mol = ase2rdkit(atoms)
@@ -32,15 +50,13 @@ def mmff_minimize(atoms):
     return rdkit2ase(mol)
 
 
-def obminimize(atoms, steps=200, ff='mmff94'):
+def obminimize(pdb_file, steps=20, ff='mmff94'):
     """OpenBabel minimization"""
-    atoms.write('tmp.pdb')
-    exe = '/Users/kutay.sezginel/anaconda3/envs/flex/bin/obminimize'
-    cmd = [exe, '-n', str(steps), '-ff', ff, 'tmp.pdb']
+    exe = OB_EXE
+    cmd = [exe, '-n', str(steps), '-ff', ff, pdb_file]
     result = subprocess.run(cmd, capture_output=True, text=True)
     with open('tmp_opt.pdb', 'w') as f:
         f.write(result.stdout)
     # st.text(result.stdout)
     atoms = ase.io.read('tmp_opt.pdb')
     return atoms
-    # obminimize -n 200 -ff mmff94 seed2.pdb > seed2_opt.pdb
