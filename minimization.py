@@ -103,8 +103,8 @@ def obminimize(pdb_file, steps=20, ff='MMFF94', st=None):
     obConversion = openbabel.OBConversion()
     obConversion.SetInFormat("pdb")
     mol = openbabel.OBMol()
-    obConversion.ReadString(mol, inf)
-    # obConversion.ReadFile(mol, pdb_file)
+    # obConversion.ReadString(mol, inf)
+    obConversion.ReadFile(mol, pdb_file)
     st.text(mol.NumAtoms())
 
     ff = openbabel.OBForceField.FindForceField(ff)
