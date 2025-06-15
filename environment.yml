@@ -1,0 +1,17 @@
+name: cbuilder
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - streamlit
+  - pandas
+  - numpy
+  - ase
+  - rdkit
+  - openbabel
+  - py3dmol
+  - ipython_genutils
+  - pip
+  - pip:
+    - stmol
