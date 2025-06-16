@@ -215,8 +215,11 @@ def add_spoke(
     return atoms
 
 def remove_spokes(atoms, skin=0.3):
+    """Delete all non-bonded and single-bonded atoms"""
     patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=1, skin=skin)
-    keep_atoms = [i for i in range(len(atoms)) if i not in patoms]
+    single_atoms = detect_perimeter_by_coordination(atoms, cutoff=0)
+    del_atoms = patoms + single_atoms
+    keep_atoms = [i for i in range(len(atoms)) if i not in del_atoms]
     return atoms[keep_atoms]
 
 def add_bonds_pdb(pdb_file, atoms, skin=0.5):
@@ -329,7 +332,7 @@ with st.expander('Settings'):
     mol_viewer_height = cols3[5].number_input('Height', value=600, min_value=0)
 
 if reload_btn:
-    st.session_state['mol'] = st.session_state['init_mol']
+    st.session_state['mol'] = deepcopy(st.session_state['init_mol'])
     st.session_state['count'] = []
 if add_perimeter_btn:
     st.session_state['count'].append('P')
