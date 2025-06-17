@@ -97,6 +97,7 @@ def obff_minimize(pdb_file, steps=20, ff='mmff94', algorithm='Conjugate Gradient
         obff.SteepestDescent(steps)
     obff.GetCoordinates(mol)
     e_final = obff.Energy()
-    st.text(f'{ff} setup : {ff_setup} | minimization completed | Energy: {e_init:.2f} > {e_final:.2f}')
+    if not ff_setup:
+        st.text(f'{ff} setup : {ff_setup} | minimization completed | Energy: {e_init:.2f} > {e_final:.2f}')
     atoms = obmol_to_ase_atoms(mol)
     return atoms
