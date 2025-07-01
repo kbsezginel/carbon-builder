@@ -1,6 +1,6 @@
 import math
 import ase.io
-from ase import Atom
+from ase import Atom, Atoms
 from ase.geometry.analysis import Analysis
 from stmol import showmol
 import py3Dmol
@@ -112,7 +112,7 @@ def calculate_spoke_positions(
                 v1 = v1 / v1l * min_bond_length
             pnew = p1 + v1
             new_atoms.append(Atom('C', pnew))
-    return new_atoms
+    return Atoms(new_atoms)
 
 def add_single_spokes(atoms, angle=60, min_bond_length=1.2):
     triangles = get_triangles(atoms)
@@ -186,16 +186,17 @@ def add_perimeter(
     atoms,
     dup_cutoff=1.0,
     dup_average=True,
-    angle=60,
     run_minimization=False,
     force_field='mmff94',
     min_steps=20,
     min_bond_length=1.2
 ):
-    atoms_new = add_single_spokes(atoms, angle=angle, min_bond_length=min_bond_length)
+    spoke_atoms = calculate_spoke_positions(atoms, num_bonds=[2], min_bond_length=min_bond_length)
+    atoms_new = atoms + spoke_atoms
     if run_minimization:
         atoms_new = minimize(atoms_new, force_field)
-    atoms_new = add_dual_spokes(atoms_new, angle=angle, min_bond_length=min_bond_length)
+    dual_spoke_atoms = calculate_spoke_positions(atoms_new, num_bonds=[1], min_bond_length=min_bond_length)
+    atoms_new = atoms_new + dual_spoke_atoms
     if run_minimization:
         atoms_new = minimize(atoms_new, force_field)
     atoms_new = remove_duplicates(atoms_new, cutoff=dup_cutoff, average=dup_average)
@@ -413,7 +414,6 @@ if add_perimeter_btn:
         st.session_state['mol'],
         dup_cutoff=dup_cutoff,
         dup_average=dup_average,
-        angle=spoke_angle,
         run_minimization=minimize_every_step,
         force_field=force_field,
         min_steps=min_steps,
@@ -463,7 +463,6 @@ if undo_btn:
                 st.session_state['mol'],
                 dup_cutoff=dup_cutoff,
                 dup_average=dup_average,
-                angle=spoke_angle,
                 run_minimization=minimize_every_step,
                 force_field=force_field,
                 min_steps=min_steps,
