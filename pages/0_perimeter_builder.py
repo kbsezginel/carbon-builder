@@ -41,21 +41,6 @@ def detect_perimeter_by_bonds(atoms, cutoff=2, skin=0.3):
             bonds.append(b)
     return bonds, bdict
 
-def get_triangles(atoms, skin=0.3):
-    patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=2, skin=skin)
-    triangles = {}
-    for a in patoms:
-        if len(bdict[a]) == 2:
-            triangles[a] = bdict[a]
-    return triangles
-
-def get_lines(atoms, skin=0.3):
-    patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=1, skin=skin)
-    lines = {}
-    for a in patoms:
-        lines[a] = bdict[a]
-    return lines, bdict
-
 def is_perimeter_complete(atoms, skin=0.3):
     patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=1, skin=skin)
     if len(patoms) == 0:
@@ -290,7 +275,6 @@ merge_cutoff_help = """If two atoms are closer to each other than this value the
 """
 
 cols1 = st.columns(7, vertical_alignment='center')
-# tri_index = cols[0].number_input('Triangle', value=0, min_value=0, placeholder=str(3))
 add_perimeter_btn = cols1[0].button('Add Perimeter', use_container_width=True)
 add_spoke_btn = cols1[1].button('Add Spokes', use_container_width=True)
 remove_spokes_btn = cols1[2].button('Remove spokes', use_container_width=True)
@@ -301,7 +285,6 @@ reload_btn = cols1[6].button('Reload', use_container_width=True)
 
 with st.expander('Settings'):
     cols2 = st.columns(6, vertical_alignment='center')
-    # show_perimeters = cols2[0].toggle('Show perimeter atoms', value=True)
     force_field = cols2[0].selectbox('Force Field', FORCE_FIELDS, index=0)
     min_steps = cols2[1].number_input('Minimization Steps', value=20, min_value=0)
     bond_skin_dist = cols2[2].number_input('Bond skin distance', value=0.3, min_value=0.0, help=bond_skin_help)
