@@ -114,46 +114,6 @@ def calculate_spoke_positions(
             new_atoms.append(Atom('C', pnew))
     return Atoms(new_atoms)
 
-def add_single_spokes(atoms, angle=60, min_bond_length=1.2):
-    triangles = get_triangles(atoms)
-    angle_radians = math.radians(angle)
-    for t in triangles:
-        p1 = atoms[t].position
-        p2 = atoms[triangles[t][0]].position
-        p3 = atoms[triangles[t][1]].position
-        p23 = np.average([p2, p3], axis=0)
-        v1 = p1 - p23
-        v1l = np.linalg.norm(v1)
-        if v1l < min_bond_length:
-            v1 = v1 / v1l * min_bond_length
-        pnew = p1 + v1
-        a = Atom('C', pnew)
-        atoms.append(a)
-    return atoms
-
-def add_dual_spokes(atoms, angle=60, min_bond_length=1.2):
-    lines, bdict = get_lines(atoms)
-    # st.text(f'Lines: {len(lines)} [num atoms: {len(atoms)}]')
-    angle_radians = math.radians(angle)
-    # pnew = p1 + v1 
-    for l in lines:
-        connected_atom = lines[l][0]
-        tri = [i for i in bdict[connected_atom] if i != l]
-        if len(tri) > 1:
-            p1 = atoms[l].position
-            p2 = atoms[connected_atom].position
-            p3 = atoms[tri[0]].position
-            p4 = atoms[tri[1]].position
-            v1 = (p1 - p2) / math.cos(angle_radians)
-            v1l = np.linalg.norm(v1)
-            if v1l < min_bond_length:
-                v1 = v1 / v1l * min_bond_length
-            p3n = p3 + v1
-            p4n = p4 + v1
-            atoms.append(Atom('C', p3n))
-            atoms.append(Atom('C', p4n))
-    return atoms
-
 def remove_duplicates(atoms, cutoff=0.1, average=False):
     delete = []
     new_atoms = []
