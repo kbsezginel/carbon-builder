@@ -62,6 +62,57 @@ def is_perimeter_complete(atoms, skin=0.3):
         return True
     else:
         return False
+    
+def calculate_spoke_positions(
+        atoms,
+        num_bonds=[1, 2],
+        bond_multiplier=2,
+        skin=0.3,
+        min_bond_length=1.0,
+    ):
+    """
+    Calculate positions for the spoke atoms. Returns new spoke atoms (ASE).
+
+    atoms: input structure (ASE atoms)
+    num_bonds: only perimeter atoms with selected number of bonds will be considered
+    bond_multiplier: bond multiplier to calculate spoke vector (default: 2 - based on hexagonal geometry)
+    skin: skin distance for calculating bonds
+    min_bond_length: minimum bond length for spokes
+    """
+    if max(num_bonds) > 2:
+        raise Exception('Spokes cannot be calculated for atoms with more than 2 bonds!')
+    patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=2, skin=skin)
+    new_atoms = []
+    for a in patoms:
+        if (len(bdict[a]) == 1) and (1 in num_bonds):
+            connected_atom = bdict[a][0]
+            tri = [i for i in bdict[connected_atom] if i != a]
+            if len(tri) < 2:
+                continue
+            p1 = atoms[a].position
+            p2 = atoms[connected_atom].position
+            p3 = atoms[tri[0]].position
+            p4 = atoms[tri[1]].position
+            v1 = (p1 - p2) * bond_multiplier
+            v1l = np.linalg.norm(v1)
+            if v1l < min_bond_length * bond_multiplier:
+                v1 = v1 / v1l * min_bond_length * bond_multiplier
+            p3n = p3 + v1
+            p4n = p4 + v1
+            new_atoms.append(Atom('C', p3n))
+            new_atoms.append(Atom('C', p4n))
+        elif len(bdict[a]) == 2:
+            p1 = atoms[a].position
+            p2 = atoms[bdict[a][0]].position
+            p3 = atoms[bdict[a][1]].position
+            p23 = np.average([p2, p3], axis=0)
+            v1 = (p1 - p23) * bond_multiplier
+            v1l = np.linalg.norm(v1)
+            if v1l < min_bond_length:
+                v1 = v1 / v1l * min_bond_length
+            pnew = p1 + v1
+            new_atoms.append(Atom('C', pnew))
+    return new_atoms
 
 def add_single_spokes(atoms, angle=60, min_bond_length=1.2):
     triangles = get_triangles(atoms)
@@ -149,7 +200,7 @@ def add_perimeter(
         atoms_new = minimize(atoms_new, force_field)
     atoms_new = remove_duplicates(atoms_new, cutoff=dup_cutoff, average=dup_average)
     if run_minimization:
-        atoms_new = minimize(atoms_new, force_field)
+        atoms_new = minimize(atoms_new, force_field, steps=min_steps)
     return atoms_new
 
 def complete_perimeter(
@@ -208,6 +259,9 @@ def add_spoke(
             p4 = atoms[tri[1]].position
             v1 = (p1 - p2) / math.cos(angle_radians)
             v1l = np.linalg.norm(v1)
+            # TODO
+            # this vector should be longer than a regular bond length
+            # I should probably check for 2xmin_bond_length
             if v1l < min_bond_length:
                 v1 = v1 / v1l * min_bond_length
             p3n = p3 + v1
