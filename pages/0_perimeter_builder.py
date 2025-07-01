@@ -178,14 +178,8 @@ def complete_perimeter(
     n = 0
     perimeter_completed = is_perimeter_complete(atoms)
     while not perimeter_completed:
-        atoms = add_spoke(
-            atoms,
-            dup_cutoff=dup_cutoff,
-            dup_average=dup_average,
-            angle=angle,
-            single_only=True,
-            min_bond_length=min_bond_length
-        )
+        spoke_atoms = calculate_spoke_positions(atoms, num_bonds=[1], min_bond_length=min_bond_length)
+        atoms = atoms + spoke_atoms
         if run_minimization:
             atoms = minimize(atoms, force_field, steps=min_steps)
         perimeter_completed = is_perimeter_complete(atoms)
@@ -198,55 +192,18 @@ def add_spoke(
     atoms,
     dup_cutoff=1.0,
     dup_average=True,
-    angle=60,
     skin=0.3,
     min_bond_length=1.2,
-    single_only=False,
     run_minimization=False,
     force_field='mmff94',
     min_steps=20
 ):
-    angle_radians = math.radians(angle)
-    patoms, bdict = detect_perimeter_by_bonds(atoms, cutoff=2, skin=skin)
-    for a in patoms:
-        if len(bdict[a]) == 1:
-            connected_atom = bdict[a][0]
-            tri = [i for i in bdict[connected_atom] if i != a]
-            if len(tri) < 2:
-                continue
-            p1 = atoms[a].position
-            p2 = atoms[connected_atom].position
-            p3 = atoms[tri[0]].position
-            p4 = atoms[tri[1]].position
-            v1 = (p1 - p2) / math.cos(angle_radians)
-            v1l = np.linalg.norm(v1)
-            # TODO
-            # this vector should be longer than a regular bond length
-            # I should probably check for 2xmin_bond_length
-            if v1l < min_bond_length:
-                v1 = v1 / v1l * min_bond_length
-            p3n = p3 + v1
-            p4n = p4 + v1
-            atoms.append(Atom('C', p3n))
-            atoms.append(Atom('C', p4n))
-        elif len(bdict[a]) == 2:
-            if single_only:
-                continue
-            p1 = atoms[a].position
-            p2 = atoms[bdict[a][0]].position
-            p3 = atoms[bdict[a][1]].position
-            p23 = np.average([p2, p3], axis=0)
-            v1 = (p1 - p23) / math.cos(angle_radians)
-            v1l = np.linalg.norm(v1)
-            if v1l < min_bond_length:
-                v1 = v1 / v1l * min_bond_length
-            pnew = p1 + v1
-            a = Atom('C', pnew)
-            atoms.append(a)
-    atoms = remove_duplicates(atoms, cutoff=dup_cutoff, average=dup_average)
+    spoke_atoms = calculate_spoke_positions(atoms, num_bonds=[1, 2], min_bond_length=min_bond_length)
+    atoms_new = atoms + spoke_atoms
+    atoms_new = remove_duplicates(atoms_new, cutoff=dup_cutoff, average=dup_average)
     if run_minimization:
-        atoms = minimize(atoms, force_field, steps=min_steps)
-    return atoms
+        atoms_new = minimize(atoms_new, force_field, steps=min_steps)
+    return atoms_new
 
 def remove_spokes(atoms, skin=0.3):
     """Delete all non-bonded and single-bonded atoms"""
@@ -326,7 +283,6 @@ else:
 
 bond_skin_help = """Skin distance used to calculate bonding.
 The larger the distance the atoms that are further away will be considered bonded."""
-spoke_angle_help = """The angle for the new spoke atoms. Default is 60 degrees based on hexogonal arrangement."""
 merge_help = """When two atoms are closer to each other than merge cutoff, only one of those atoms will be kept.
 If merge to the middle is selected, the average position between these atoms will be kept.
 If merge to the middle is not selected, only the first atom will be kept. The positions will not be averaged."""
@@ -346,8 +302,6 @@ reload_btn = cols1[6].button('Reload', use_container_width=True)
 with st.expander('Settings'):
     cols2 = st.columns(6, vertical_alignment='center')
     # show_perimeters = cols2[0].toggle('Show perimeter atoms', value=True)
-    spoke_angle = 60
-    # spoke_angle = cols2[0].number_input('Spoke angle', value=60, help=spoke_angle_help)
     force_field = cols2[0].selectbox('Force Field', FORCE_FIELDS, index=0)
     min_steps = cols2[1].number_input('Minimization Steps', value=20, min_value=0)
     bond_skin_dist = cols2[2].number_input('Bond skin distance', value=0.3, min_value=0.0, help=bond_skin_help)
@@ -385,7 +339,6 @@ if add_spoke_btn:
         st.session_state['mol'],
         dup_cutoff=dup_cutoff,
         dup_average=dup_average,
-        angle=spoke_angle,
         run_minimization=minimize_every_step,
         force_field=force_field,
         min_steps=min_steps,
@@ -408,7 +361,6 @@ if complete_perimeter_btn:
         st.session_state['mol'],
         dup_cutoff=dup_cutoff,
         dup_average=dup_average,
-        angle=spoke_angle,
         run_minimization=minimize_every_step,
         force_field=force_field,
         min_steps=min_steps,
@@ -433,7 +385,6 @@ if undo_btn:
                 st.session_state['mol'],
                 dup_cutoff=dup_cutoff,
                 dup_average=dup_average,
-                angle=spoke_angle,
                 run_minimization=minimize_every_step,
                 force_field=force_field,
                 min_steps=min_steps,
@@ -446,7 +397,6 @@ if undo_btn:
                 st.session_state['mol'],
                 dup_cutoff=dup_cutoff,
                 dup_average=dup_average,
-                angle=spoke_angle,
                 run_minimization=minimize_every_step,
                 force_field=force_field,
                 min_steps=min_steps,
