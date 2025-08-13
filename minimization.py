@@ -1,18 +1,18 @@
-import os
+# import os
 import ase.io
-import subprocess
+# import subprocess
 import numpy as np
-from rdkit import Chem
-from rdkit.Chem import AllChem
+# from rdkit import Chem
+# from rdkit.Chem import AllChem
 from openbabel import openbabel
 from ase import Atoms
 from ase.optimize import BFGS
 from ase.calculators.emt import EMT
 from ase.geometry.analysis import Analysis
-from rdkit2ase import rdkit2ase, ase2rdkit
+# from rdkit2ase import rdkit2ase, ase2rdkit
 
 
-FORCE_FIELDS = ['mmff94', 'mmff94s', 'ghemical', 'gaff', 'uff', 'EMT', 'MMFF (rdKit)']
+FORCE_FIELDS = ['mmff94', 'mmff94s', 'ghemical', 'gaff', 'uff', 'EMT']
 
 
 def minimize(pdb_file, force_field, steps=20, st=None):
@@ -24,8 +24,8 @@ def minimize(pdb_file, force_field, steps=20, st=None):
         # atoms = obminimize(pdb_file, steps=steps, ff=force_field, st=st)
     elif force_field == 'EMT':
         atoms = emt_minimize(pdb_file)
-    elif force_field == 'MMFF (rdKit)':
-        atoms = mmff_minimize(pdb_file)
+    # elif force_field == 'MMFF (rdKit)':
+    #     atoms = mmff_minimize(pdb_file)
     else:
         raise Exception(f'Force field {force_field} not available')
     return atoms
@@ -40,15 +40,15 @@ def emt_minimize(pdb_file):
     return atoms_new
 
 
-def mmff_minimize(pdb_file):
-    """rdKit mmff minimization"""
-    mol = Chem.MolFromPDBFile(pdb_file, removeHs=False)  # Set 
-    # Chem.AddHs(mol)
-    # mol = ase2rdkit(atoms)
-    mp = AllChem.MMFFGetMoleculeProperties(mol)
-    ff = AllChem.MMFFGetMoleculeForceField(mol, mp)
-    ff.Minimize()
-    return rdkit2ase(mol)
+# def mmff_minimize(pdb_file):
+#     """rdKit mmff minimization"""
+#     mol = Chem.MolFromPDBFile(pdb_file, removeHs=False)  # Set 
+#     # Chem.AddHs(mol)
+#     # mol = ase2rdkit(atoms)
+#     mp = AllChem.MMFFGetMoleculeProperties(mol)
+#     ff = AllChem.MMFFGetMoleculeForceField(mol, mp)
+#     ff.Minimize()
+#     return rdkit2ase(mol)
 
 
 def obmol_to_ase_atoms(obmol):
